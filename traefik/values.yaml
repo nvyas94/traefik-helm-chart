@@ -3,7 +3,7 @@
     name: traefik
     # defaults to appVersion
     tag: ""
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
 
   #
   # Configure the deployment
