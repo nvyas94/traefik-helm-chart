@@ -298,7 +298,6 @@
     type: LoadBalancer
     # Additional annotations (e.g. for cloud provider specific config).
     annotations: {}
-    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: 	arn:aws:acm:ap-south-1:375872583153:certificate/38e5676f-d39e-4e2f-aff1-52b64f3087fd
     service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
     labels: {}
     # Additional entries here will be added to the service spec. Cannot contains
