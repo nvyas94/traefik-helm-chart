@@ -249,7 +249,7 @@
       expose: true
       exposedPort: 80
       # The port protocol (TCP/UDP)
-      protocol: HTTP
+      protocol: TCP
       # Use nodeport if set. This is useful if you have configured Traefik in a
       # LoadBalancer
       nodePort: 32080
@@ -263,7 +263,7 @@
       expose: true
       exposedPort: 443
       # The port protocol (TCP/UDP)
-      protocol: HTTPS
+      protocol: TCP
       nodePort: 32443
       # Set TLS at the entrypoint
       # https://doc.traefik.io/traefik/routing/entrypoints/#tls
