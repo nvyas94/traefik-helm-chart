@@ -298,7 +298,6 @@
     type: LoadBalancer
     # Additional annotations (e.g. for cloud provider specific config).
     annotations: {}
-    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
     labels: {}
     # Additional entries here will be added to the service spec. Cannot contains
     # type, selector or ports entries.
