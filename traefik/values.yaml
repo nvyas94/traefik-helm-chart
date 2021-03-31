@@ -73,10 +73,10 @@
   experimental:
     plugins:
       enabled: false
-    #kubernetesGateway:
-    #  enabled: false
-    #  appLabelSelector: "traefik"
-    #  certificates: []
+    kubernetesGateway:
+      enabled: false
+      appLabelSelector: "traefik"
+      certificates: []
       # - group: "core"
       #   kind: "Secret"
       #   name: "mysecret"
