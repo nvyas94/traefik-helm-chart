@@ -73,10 +73,10 @@
   experimental:
     plugins:
       enabled: false
-    kubernetesGateway:
-      enabled: false
-      appLabelSelector: "traefik"
-      certificates: []
+    #kubernetesGateway:
+    #  enabled: false
+    #  appLabelSelector: "traefik"
+    #  certificates: []
       # - group: "core"
       #   kind: "Secret"
       #   name: "mysecret"
@@ -110,7 +110,7 @@
         # - "default"
       # IP used for Kubernetes Ingress endpoints
       publishedService:
-        enabled: false
+        enabled: true
         # Published Kubernetes Service to copy status from. Format: namespace/servicename
         # By default this Traefik service
         # pathOverride: ""
@@ -149,7 +149,7 @@
       level: DEBUG
     access:
       # To enable access logs
-      enabled: false
+      enabled: true
       # By default, logs are written using the Common Log Format (CLF).
       # To write logs in JSON, use json in the format option.
       # If the given format is unsupported, the default (CLF) is used instead.
@@ -189,8 +189,9 @@
   # All available options available on https://docs.traefik.io/reference/static-configuration/cli/
   ## Use curly braces to pass values: `helm install --set="additionalArguments={--providers.kubernetesingress.ingressclass=traefik-internal,--log.level=DEBUG}"`
   additionalArguments: []
+  - "--providers.kubernetesingress.ingressendpoint.publishedservice=traefik/traefik"
   #  - "--providers.kubernetesingress.ingressclass=traefik-internal"
-  #  - "--log.level=DEBUG"
+   # - "--log.level=DEBUG"
 
   # Environment variables to be passed to Traefik's binary
   env: []
