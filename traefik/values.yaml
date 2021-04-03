@@ -318,8 +318,8 @@
   ##
   autoscaling:
     enabled: true
-    minReplicas: 6
-    maxReplicas: 15
+    minReplicas: 10
+    maxReplicas: 18
     metrics:
     - type: Resource
       resource:
@@ -401,10 +401,10 @@
 
   resources:
     requests:
-      cpu: "800m"
+      cpu: "1000m"
       memory: "1800Mi"
     limits:
-      cpu: "1000m"
+      cpu: "1400m"
       memory: "2000Mi"
   affinity: {}
   # # This example pod anti-affinity forces the scheduler to put traefik pods
