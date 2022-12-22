@@ -2,7 +2,7 @@ suite: Gateway configuration
 templates:
   - gateway.yaml
 tests:
-  - it: should have one gateway with the correct class and an http port
+  - it: should have one Gateway with the correct class and an http port
     set:
       experimental:
         kubernetesGateway:
@@ -14,15 +14,18 @@ tests:
       - equal:
           path: spec.listeners[0].port
           value: 8000
-  - it: should have one gateway with the correct class and an http port as well as an https port
+      - equal:
+          path: metadata.namespace
+          value: "NAMESPACE"
+  - it: should have one Gateway with the correct class and an http port as well as an https port
     set:
       experimental:
         kubernetesGateway:
           enabled: true
-          certificates:
-            - name: "my-name"
-              group: "my-group"
-              kind: "my-kind"
+          certificate:
+            name: "my-name"
+            group: "my-group"
+            kind: "my-kind"
     asserts:
       - equal:
           path: spec.gatewayClassName
@@ -30,15 +33,47 @@ tests:
       - equal:
           path: spec.listeners[0].port
           value: 8000
+      - equal:
+          path: spec.listeners[1].name
+          value: websecure
       - equal:
           path: spec.listeners[1].port
           value: 8443
       - equal:
-          path: spec.listeners[1].tls.certificateRef.name
+          path: spec.listeners[1].tls.certificateRefs[0].name
           value: "my-name"
       - equal:
-          path: spec.listeners[1].tls.certificateRef.group
+          path: spec.listeners[1].tls.certificateRefs[0].group
           value: "my-group"
       - equal:
-          path: spec.listeners[1].tls.certificateRef.kind
+          path: spec.listeners[1].tls.certificateRefs[0].kind
           value: "my-kind"
+  - it: should install Gateway in custom namespace
+    set:
+      experimental:
+        kubernetesGateway:
+          enabled: true
+          namespace: "default"
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: "default"
+  - it: should install Gateway in default namespace
+    set:
+      experimental:
+        kubernetesGateway:
+          enabled: true
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: "NAMESPACE"
+  - it: should install Gateway in namespaceOverride
+    set:
+      experimental:
+        kubernetesGateway:
+          enabled: true
+      namespaceOverride: "traefik-ns-override"
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: "traefik-ns-override"
