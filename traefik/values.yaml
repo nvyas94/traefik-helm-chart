@@ -433,11 +433,11 @@ ports:
     protocol: TCP
     # Use nodeport if set. This is useful if you have configured Traefik in a
     # LoadBalancer.
-     nodePort: 31080
+    nodePort: 31080
     # Port Redirections
     # Added in 2.2, you can make permanent redirects via entrypoints.
     # https://docs.traefik.io/routing/entrypoints/#redirection
-     redirectTo: websecure
+    redirectTo: websecure
     #
     # Trust forwarded  headers information (X-Forwarded-*).
     # forwardedHeaders:
@@ -455,7 +455,7 @@ ports:
     exposedPort: 443
     # The port protocol (TCP/UDP)
     protocol: TCP
-     nodePort: 32443
+    nodePort: 32443
     #
     ## Enable HTTP/3 on the entrypoint
     ## Enabling it will also enable http3 experimental feature
