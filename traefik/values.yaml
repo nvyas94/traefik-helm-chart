@@ -116,7 +116,7 @@ ports:
     expose: true
     exposedPort: 443
     protocol: TCP
-    nodePort: 32443
+    nodePort: 31443
     http3:
       enabled: false
     tls:
