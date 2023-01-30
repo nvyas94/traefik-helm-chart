@@ -8,7 +8,7 @@ hub:
 deployment:
   enabled: true
   kind: Deployment
-  replicas: 4
+  replicas: 10
   terminationGracePeriodSeconds: 60
   minReadySeconds: 0
   annotations: {}
@@ -196,7 +196,7 @@ rbac:
 podSecurityPolicy:
   enabled: false
 serviceAccount:
-  name: ""
+  name: "traefik"
 serviceAccountAnnotations: {}
 resources:
   requests:
