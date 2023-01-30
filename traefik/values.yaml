@@ -196,7 +196,7 @@ rbac:
 podSecurityPolicy:
   enabled: false
 serviceAccount:
-  name: "traefik"
+  name: ""
 serviceAccountAnnotations: {}
 resources:
   requests:
