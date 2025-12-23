@@ -12,6 +12,7 @@ image:
 
 hub:
   enabled: false
+  namespaces: []
 
 # ---------------------------------------------------------
 # DEPLOYMENT
@@ -88,7 +89,10 @@ providers:
     allowEmptyServices: false
     namespaces: []
     publishedService:
-      enabled: true   # REQUIRED for EKS/NLB
+      enabled: false   # REQUIRED for EKS/NLB
+  kubernetesIngressNginx:
+    enabled: false
+    namespaces: []    
 
 # ---------------------------------------------------------
 # DASHBOARD / GUI ✅ ENABLED
