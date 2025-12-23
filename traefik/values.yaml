@@ -16,6 +16,10 @@ hub:
 
 oci_meta:
   enabled: false  
+  images:
+    proxy:
+      repository: traefik
+      tag: ""
 
 # ---------------------------------------------------------
 # DEPLOYMENT
