@@ -92,7 +92,10 @@ providers:
       enabled: false   # REQUIRED for EKS/NLB
   kubernetesIngressNginx:
     enabled: false
-    namespaces: []    
+    namespaces: [] 
+  kubernetesGateway:
+    enabled: false
+    namespaces: []     
 
 # ---------------------------------------------------------
 # DASHBOARD / GUI ✅ ENABLED
