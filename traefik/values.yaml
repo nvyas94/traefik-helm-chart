@@ -95,7 +95,10 @@ providers:
     namespaces: [] 
   kubernetesGateway:
     enabled: false
-    namespaces: []     
+    namespaces: [] 
+  knative:
+    enabled: false
+    namespaces: []      
 
 # ---------------------------------------------------------
 # DASHBOARD / GUI ✅ ENABLED
