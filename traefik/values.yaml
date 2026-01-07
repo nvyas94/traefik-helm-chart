@@ -58,7 +58,6 @@ deployment:
 podDisruptionBudget:  
   enabled: true
   maxUnavailable:  1
-  minAvailable:    2
 
 # -- Create a default IngressClass for Traefik
 ingressClass: 
