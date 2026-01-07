@@ -1,36 +1,34 @@
 # =========================================================
 # Traefik Helm values.yaml
 # Chart: traefik v37.4.x (stable)
-# Kubernetes: EKS 1.33
+# Kubernetes: EKS 1.34
 # Migrated from: Traefik v2.9.4 (294)
+# Author: Naman Vyas
 # =========================================================
 
-image:
+image:  
   registry: docker.io
   repository: traefik
+  tag:  # @schema type:[string, null]
   pullPolicy: IfNotPresent
+commonLabels: {}
 
-hub:
-  enabled: false
-  namespaces: []
-
-oci_meta:
-  enabled: false  
-  images:
-    proxy:
-      repository: traefik
-      tag: ""
-
-# ---------------------------------------------------------
-# DEPLOYMENT
-# ---------------------------------------------------------
 deployment:
   enabled: true
   kind: Deployment
   replicas: 5
+  revisionHistoryLimit:
   terminationGracePeriodSeconds: 60
-  minReadySeconds: 0
+  minReadySeconds: 10
+  healthchecksPort:
+  healthchecksHost: ""
+  healthchecksScheme:
+  readinessPath: ""
+  
+  livenessPath: ""
+ 
   annotations: {}
+
   labels: {}
   podAnnotations: {}
   podLabels: {}
@@ -38,200 +36,564 @@ deployment:
   additionalVolumes: []
   initContainers: []
   shareProcessNamespace: false
+  dnsPolicy: ""
+  dnsConfig: {}
+  hostAliases: []
   imagePullSecrets: []
   lifecycle: {}
+  # preStop:
+  #   sleep:
+  #     seconds: 20
+  # postStart:
+  #   httpGet:
+  #     path: /ping
+  #     port: 8080
+  #     host: localhost
+  #     scheme: HTTP
+  # -- Set a runtimeClassName on pod
+  runtimeClassName: ""
+  # -- Percentage of memory limit to set for GOMEMLIMIT
+  # -- only takes effect when resources.limits.memory is set
+  goMemLimitPercentage: 0.9
+podDisruptionBudget:  
+  enabled: true
+  maxUnavailable:  1
+  minAvailable:    2
 
-updateStrategy:
-  type: RollingUpdate
-  rollingUpdate:
-    maxUnavailable: 0
-    maxSurge: 2
-
-podDisruptionBudget:
-  enabled: false
-
-# ---------------------------------------------------------
-# RESOURCES  ✅ (FIXED)
-# ---------------------------------------------------------
-resources:
-  requests:
-    cpu: 1000m
-    memory: 1800Mi
-  limits:
-    cpu: 1400m
-    memory: 2000Mi
-
-# ---------------------------------------------------------
-# INGRESS CLASS
-# ---------------------------------------------------------
-ingressClass:
+# -- Create a default IngressClass for Traefik
+ingressClass: 
   enabled: true
   isDefaultClass: true
-  name: traefik
+  name: ""
 
-# ---------------------------------------------------------
-# EXPERIMENTAL / GATEWAY API
-# ---------------------------------------------------------
+core: 
+  defaultRuleSyntax: ""
+
+# Traefik experimental features
 experimental:
-  plugins:
+  # -- Defines whether all plugins must be loaded successfully for Traefik to start
+  abortOnPluginFailure: false
+  fastProxy:
+    # -- Enables the FastProxy implementation.
     enabled: false
+    # -- Enable debug mode for the FastProxy implementation.
+    debug: false
   kubernetesGateway:
+    # -- Enable traefik experimental GatewayClass CRD
     enabled: false
-    gateway:
-      enabled: true
+  # -- Enable experimental plugins
+  plugins: {}
+  # -- Enable experimental local plugins
+  localPlugins: {}
+  # -- Enable OTLP logging experimental feature.
+  otlpLogs: false
+  # -- Enable Knative provider experimental feature.
+  knative: false
 
-# ---------------------------------------------------------
-# PROVIDERS
-# ---------------------------------------------------------
-providers:
-  kubernetesCRD:
-    enabled: true
-    allowCrossNamespace: false
-    allowExternalNameServices: false
-    allowEmptyServices: false
-    namespaces: []
-  kubernetesIngress:
-    enabled: true
-    allowExternalNameServices: false
-    allowEmptyServices: false
-    namespaces: []
-    publishedService:
-      enabled: false   # REQUIRED for EKS/NLB
-  kubernetesIngressNginx:
-    enabled: false
-    namespaces: [] 
-  kubernetesGateway:
-    enabled: false
-    namespaces: [] 
-  knative:
-    enabled: false
-    namespaces: []      
+gateway:
+  enabled: true
+  name: ""
+  namespace: ""
+  annotations: {}
+  infrastructure: {}
+  listeners:
+    web:
+      port: 8000
+      hostname: ""
+      protocol: HTTP
+      namespacePolicy:  # @schema type:[object, null]
+    # websecure:
+    #   # -- Port is the network port. Multiple listeners may use the same port, subject to the Listener compatibility rules.
+    #   # The port must match a port declared in ports section.
+    #   port: 8443
+    #   hostname:
+    #   protocol: HTTPS
+    #   namespacePolicy:
+    #   certificateRefs:
+    #   mode:
 
-# ---------------------------------------------------------
-# DASHBOARD / GUI ✅ ENABLED
-# ---------------------------------------------------------
+gatewayClass:  # @schema additionalProperties: false
+  enabled: true
+  name: ""
+  labels: {}
+
 api:
   dashboard: true
-
-ports:
-  traefik:
-    port: 9000
-    expose:
-      default: false
-    exposedPort: 9000
-    protocol: TCP
-
+  basePath: ""  # @schema type:[string, null]; default: "/"
 ingressRoute:
   dashboard:
-    enabled: true
+    enabled: false
+    annotations: {}
+    labels: {}
     matchRule: PathPrefix(`/dashboard`) || PathPrefix(`/api`)
-    entryPoints:
-      - traefik
-    middlewares: []   # ⚠️ add auth middleware in prod
+    services:
+      - name: api@internal
+        kind: TraefikService
+    entryPoints: ["traefik"]
+    middlewares: []
+    tls: {}
+  healthcheck:
+    enabled: false
+    annotations: {}
+    labels: {}
+    matchRule: PathPrefix(`/ping`)
+    services:
+      - name: ping@internal
+        kind: TraefikService
+    entryPoints: ["traefik"]
+    middlewares: []
+    tls: {}
 
-# ---------------------------------------------------------
-# HEALTH CHECKS
-# ---------------------------------------------------------
-readinessProbe:
+updateStrategy:  
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0  
+    maxSurge: 1        
+
+readinessProbe:  
   failureThreshold: 1
   initialDelaySeconds: 2
   periodSeconds: 10
   successThreshold: 1
   timeoutSeconds: 2
-
-livenessProbe:
+livenessProbe:  
   failureThreshold: 3
   initialDelaySeconds: 2
   periodSeconds: 10
   successThreshold: 1
   timeoutSeconds: 2
+startupProbe: {}
 
-# ---------------------------------------------------------
-# LOGGING
-# ---------------------------------------------------------
+providers:  
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: false
+    allowExternalNameServices: false
+    allowEmptyServices: true
+    ingressClass: ""
+    namespaces: []
+    nativeLBByDefault: false
+
+  kubernetesIngress:
+    enabled: true
+    allowExternalNameServices: false
+    allowEmptyServices: true
+    ingressClass:  # @schema type:[string, null]
+    namespaces: []
+    publishedService:
+      enabled: true
+      pathOverride: ""
+    nativeLBByDefault: false
+    strictPrefixMatching: false
+
+  kubernetesGateway:
+    enabled: false
+    experimentalChannel: false
+    namespaces: []
+    labelselector: ""
+    nativeLBByDefault: false
+    statusAddress:
+      ip: ""
+      hostname: ""
+      service:
+        enabled: true
+        name: ""
+        namespace: ""
+
+  file:
+    enabled: false
+    watch: true
+    content: ""
+
+  kubernetesIngressNginx:
+    enabled: false
+    controllerClass: "k8s.io/ingress-nginx"
+    ingressClass: "nginx"
+    ingressClassByName: false
+    watchIngressWithoutClass: false
+    namespaces: []
+    namespaceSelector: ""
+    publishService:
+      enabled: false
+      pathOverride: ""
+    publishStatusAddress: ""
+    defaultBackendService: ""
+    disableSvcExternalName: false
+    throttleDuration: ""
+    certAuthFilePath: ""
+    endpoint: ""
+    token: ""
+
+  knative:
+    enabled: false
+    namespaces: []
+    labelselector: ""
+volumes: []
+additionalVolumeMounts: []
+
 logs:
   general:
-    level: ERROR
+    format:  # @schema enum:["common", "json", null]; type:[string, null]; default: "common"
+    level: "ERROR"  # @schema enum:[TRACE,DEBUG,INFO,WARN,ERROR,FATAL,PANIC]; default: "INFO"
+    filePath: ""
+    noColor: false
+    otlp:
+      enabled: false
+      serviceName:  # @schema type:[string, null]
+      http:
+        enabled: false
+        endpoint: ""
+        headers: {}
+        tls:
+          ca: ""
+          cert: ""
+          key: ""
+          insecureSkipVerify:  # @schema type:[boolean, null]
+      grpc:
+        enabled: false
+        endpoint: ""
+        insecure: false
+        tls:
+          ca: ""
+          cert: ""
+          key: ""
+          insecureSkipVerify: false
+      resourceAttributes: {}
+
   access:
     enabled: false
-    filters: {}
+    format:  # @schema enum:["common", "genericCLF", "json", null]; type:[string, null]; default: "common"
+    bufferingSize:  # @schema type:[integer, null]
+    timezone: ""
+    filters:  # @schema additionalProperties: false
+      statuscodes: ""
+      retryattempts: false
+      minduration: ""
+    addInternals: false
     fields:
       general:
-        defaultmode: keep
+        defaultmode: keep  # @schema enum:[keep, drop, redact]; default: keep
+        names: {}
       headers:
-        defaultmode: drop
+        defaultmode: drop  # @schema enum:[keep, drop, redact]; default: drop
+        names: {}
+    otlp:
+      enabled: false
+      serviceName:  # @schema type:[string, null]
+      http:
+        enabled: false
+        endpoint: ""
+        headers: {}
+        tls:
+          ca: ""
+          cert: ""
+          key: ""
+          insecureSkipVerify:  # @schema type:[boolean, null]
+      grpc:
+        enabled: false
+        endpoint: ""
+        insecure: false
+        tls:
+          ca: ""
+          cert: ""
+          key: ""
+          insecureSkipVerify: false
+      resourceAttributes: {}
 
-# ---------------------------------------------------------
-# METRICS / MONITORING
-# ---------------------------------------------------------
 metrics:
   addInternals: true
   prometheus:
     entryPoint: metrics
-    addEntryPointsLabels: true
-    addServicesLabels: true
+    addEntryPointsLabels:  true
+    addRoutersLabels:  true
+    addServicesLabels:  true
+    buckets: ""
+    manualRouting: false
+    headerLabels: {}  # @schema type:[object, null]
     service:
-      enabled: true
+      enabled: false
+      labels: {}
+      annotations: {}
+    disableAPICheck:  # @schema type:[boolean, null]
+    serviceMonitor:
+      enabled: false
+      apiVersion: "monitoring.coreos.com/v1"
+      metricRelabelings: []
+      relabelings: []
+      jobLabel: ""
+      interval: ""
+      honorLabels: false
+      scrapeTimeout: ""
+      honorTimestamps: false
+      enableHttp2: false
+      followRedirects: false
+      additionalLabels: {}
+      namespace: ""
+      namespaceSelector: {}
+    prometheusRule:
+      enabled: false
+      apiVersion: "monitoring.coreos.com/v1"
+      additionalLabels: {}
+      namespace: ""
+  #    ## Address instructs exporter to send metrics to datadog-agent at this address.
+  #    address: "127.0.0.1:8125"
+  #    ## The interval used by the exporter to push metrics to datadog-agent. Default=10s
+  #    # pushInterval: 30s
+  #    ## The prefix to use for metrics collection. Default="traefik"
+  #    # prefix: traefik
+  #    ## Enable metrics on entry points. Default=true
+  #    # addEntryPointsLabels: false
+  #    ## Enable metrics on routers. Default=false
+  #    # addRoutersLabels: true
+  #    ## Enable metrics on services. Default=true
+  #    # addServicesLabels: false
+  #  influxdb2:
+  #    ## Address instructs exporter to send metrics to influxdb v2 at this address.
+  #    address: localhost:8086
+  #    ## Token with which to connect to InfluxDB v2.
+  #    token: xxx
+  #    ## Organisation where metrics will be stored.
+  #    org: ""
+  #    ## Bucket where metrics will be stored.
+  #    bucket: ""
+  #    ## The interval used by the exporter to push metrics to influxdb. Default=10s
+  #    # pushInterval: 30s
+  #    ## Additional labels (influxdb tags) on all metrics.
+  #    # additionalLabels:
+  #    #   env: production
+  #    #   foo: bar
+  #    ## Enable metrics on entry points. Default=true
+  #    # addEntryPointsLabels: false
+  #    ## Enable metrics on routers. Default=false
+  #    # addRoutersLabels: true
+  #    ## Enable metrics on services. Default=true
+  #    # addServicesLabels: false
+  #  statsd:
+  #    ## Address instructs exporter to send metrics to statsd at this address.
+  #    address: localhost:8125
+  #    ## The interval used by the exporter to push metrics to influxdb. Default=10s
+  #    # pushInterval: 30s
+  #    ## The prefix to use for metrics collection. Default="traefik"
+  #    # prefix: traefik
+  #    ## Enable metrics on entry points. Default=true
+  #    # addEntryPointsLabels: false
+  #    ## Enable metrics on routers. Default=false
+  #    # addRoutersLabels: true
+  #    ## Enable metrics on services. Default=true
+  #    # addServicesLabels: false
+  otlp:
+    # -- Set to true in order to enable the OpenTelemetry metrics
+    enabled: false
+    addEntryPointsLabels:  # @schema type:[boolean, null]
+    addRoutersLabels:  # @schema type:[boolean, null]
+    addServicesLabels:  # @schema type:[boolean, null]
+    explicitBoundaries: []
+    pushInterval: ""
+    serviceName:  # @schema type:[string, null]
+    http:
+      enabled: false
+      endpoint: ""
+      headers: {}
+      tls:
+        ca: ""
+        cert: ""
+        key: ""
+        insecureSkipVerify:  # @schema type:[boolean, null]
+    grpc:
+      enabled: false
+      endpoint: ""
+      insecure: false
+      tls:
+        ca: ""
+        cert: ""
+        key: ""
+        insecureSkipVerify: false
+    resourceAttributes: {}
 
-# ---------------------------------------------------------
-# GLOBAL / EXTRA ARGS
-# ---------------------------------------------------------
-globalArguments:
-  - --global.checknewversion
-  - --global.sendanonymoususage
+ocsp:
+  enabled: false
+  responderOverrides: {}
+tracing:  # @schema additionalProperties: false
+  addInternals: false
+  serviceName:  # @schema type:[string, null]
+  resourceAttributes: {}
+  capturedRequestHeaders: []
+  capturedResponseHeaders: []
+  safeQueryParams: []
+  sampleRate:  # @schema type:[number, null]; minimum:0; maximum:1
+  otlp:
+    enabled: false
+    http:
+      enabled: false
+      endpoint: ""
+      headers: {}
+      tls:
+        ca: ""
+        cert: ""
+        key: ""
+        insecureSkipVerify: false
+    grpc:
+      enabled: false
+      endpoint: ""
+      insecure: false
+      tls:
+        ca: ""
+        cert: ""
+        key: ""
+        insecureSkipVerify: false
 
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+  azure:
+    enabled: false
+    images:
+      proxy:
+        image: traefik
+        tag: latest
+        registry: docker.io/library
+      hub:
+        image: traefik-hub
+        tag: latest
+        registry: ghcr.io/traefik
 additionalArguments: []
-
 env: []
 envFrom: []
 
-# ---------------------------------------------------------
-# ENTRYPOINTS
-# ---------------------------------------------------------
 ports:
+  traefik:
+    port: 8080
+    hostPort:  # @schema type:[integer, null]; minimum:0
+    hostIP:  # @schema type:[string, null]
+    expose:
+      default: false
+    exposedPort: 8080
+    protocol: TCP
+    observability:  # @schema additionalProperties: false
+      metrics:  # @schema type:[boolean, null]; default: true
+      accessLogs:  # @schema type:[boolean, null]; default: true
+      tracing:  # @schema type:[boolean, null]; default: true
+      traceVerbosity:  # @schema enum:[minimal, detailed, null]; type:[string, null]; default: minimal
   web:
     port: 8000
     expose:
       default: true
     exposedPort: 80
+    targetPort:  # @schema type:[string, integer, null]; minimum:0
     protocol: TCP
-    redirectTo:
-      port: websecure
-
+    nodePort:  # @schema type:[integer, null]; minimum:0
+    redirections:
+      entryPoint: {}
+    forwardedHeaders:
+      trustedIPs: []
+      insecure: false
+    proxyProtocol:
+      trustedIPs: []
+      insecure: false
+    transport:
+      respondingTimeouts:
+        readTimeout:   # @schema type:[string, integer, null]
+        writeTimeout:  # @schema type:[string, integer, null]
+        idleTimeout:   # @schema type:[string, integer, null]
+      lifeCycle:
+        requestAcceptGraceTimeout:  # @schema type:[string, integer, null]
+        graceTimeOut:               # @schema type:[string, integer, null]
+      keepAliveMaxRequests:         # @schema type:[integer, null]; minimum:0
+      keepAliveMaxTime:             # @schema type:[string, integer, null]
+    observability:  # @schema additionalProperties: false
+      metrics:  # @schema type:[boolean, null]; default: true
+      accessLogs:  # @schema type:[boolean, null]; default: true
+      tracing:  # @schema type:[boolean, null]; default: true
+      traceVerbosity:  # @schema enum:[minimal, detailed, null]; type:[string, null]; default: minimal
   websecure:
     port: 8443
+    hostPort:  # @schema type:[integer, null]; minimum:0
+    containerPort:  # @schema type:[integer, null]; minimum:0
     expose:
       default: true
     exposedPort: 443
+    targetPort:  # @schema type:[string, integer, null]; minimum:0
     protocol: TCP
+    nodePort:  # @schema type:[integer, null]; minimum:0
+    appProtocol:  # @schema type:[string, null]
+    allowACMEByPass: false
+    http3:
+      enabled: false
+      advertisedPort:  # @schema type:[integer, null]; minimum:0
+    forwardedHeaders:
+      trustedIPs: []
+      insecure: false
+    proxyProtocol:
+      trustedIPs: []
+      insecure: false
+    transport:
+      respondingTimeouts:
+        readTimeout:   # @schema type:[string, integer, null]
+        writeTimeout:  # @schema type:[string, integer, null]
+        idleTimeout:   # @schema type:[string, integer, null]
+      lifeCycle:
+        requestAcceptGraceTimeout:  # @schema type:[string, integer, null]
+        graceTimeOut:               # @schema type:[string, integer, null]
+      keepAliveMaxRequests:         # @schema type:[integer, null]; minimum:0
+      keepAliveMaxTime:             # @schema type:[string, integer, null]
     tls:
       enabled: true
-
+      options: ""
+      certResolver: ""
+      domains: []
+    middlewares: []
+    observability:  # @schema additionalProperties: false
+      metrics:  # @schema type:[boolean, null]; default: true
+      accessLogs:  # @schema type:[boolean, null]; default: true
+      tracing:  # @schema type:[boolean, null]; default: true
+      traceVerbosity:  # @schema enum:[minimal, detailed, null]; type:[string, null]; default: minimal
   metrics:
     port: 9100
     expose:
       default: false
     exposedPort: 9100
     protocol: TCP
+    observability:  # @schema additionalProperties: false
+      metrics:  # @schema type:[boolean, null]; default: true
+      accessLogs:  # @schema type:[boolean, null]; default: true
+      tracing:  # @schema type:[boolean, null]; default: true
+      traceVerbosity:  # @schema enum:[minimal, detailed, null]; type:[string, null]; default: minimal
+tlsOptions: {}
+tlsStore: {}
 
-# ---------------------------------------------------------
-# SERVICE (AWS EKS NLB – IP MODE)
-# ---------------------------------------------------------
 service:
   enabled: true
   single: true
   type: LoadBalancer
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "classic"
-    # service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
-    # service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+  annotations: {}
+  annotationsTCP: {}
+  annotationsUDP: {}
   labels: {}
   spec: {}
+  # externalTrafficPolicy: Cluster
+  # loadBalancerIP: "1.2.3.4"
+  # clusterIP: "2.3.4.5"
+  loadBalancerSourceRanges: []
+  # - 192.168.0.1/32
+  # - 172.16.0.0/16
+  # loadBalancerClass: service.k8s.aws/nlb
+  externalIPs: []
+  # - 1.2.3.4
+  # ipFamilyPolicy: SingleStack
+  # ipFamilies:
+  #   - IPv4
+  #   - IPv6
+  additionalServices: {}
+  # internal:
+  #   type: ClusterIP
+  #   # labels: {}
+  #   # annotations: {}
+  #   # spec: {}
+  #   # loadBalancerSourceRanges: []
+  #   # externalIPs: []
+  #   # ipFamilies: [ "IPv4","IPv6" ]
 
-# ---------------------------------------------------------
-# AUTOSCALING (HPA)
-# ---------------------------------------------------------
-autoscaling:
+autoscaling:  
   enabled: true
   minReplicas: 10
   maxReplicas: 18
@@ -249,45 +611,189 @@ autoscaling:
           type: Utilization
           averageUtilization: 60
 
-# ---------------------------------------------------------
-# STORAGE
-# ---------------------------------------------------------
 persistence:
   enabled: false
   name: data
+  existingClaim: ""
   accessMode: ReadWriteOnce
   size: 128Mi
+  storageClass: ""
+  volumeName: ""
   path: /data
-
-# ---------------------------------------------------------
-# RBAC / SECURITY
-# ---------------------------------------------------------
-rbac:
+  annotations: {}
+  subPath: ""
+certificatesResolvers: {}
+hostNetwork: false
+rbac:  # @schema additionalProperties: false
   enabled: true
   namespaced: false
+  aggregateTo: []
+  secretResourceNames: []
+podSecurityPolicy:
+  enabled: false
+serviceAccount:  # @schema additionalProperties: false
+  name: ""
+serviceAccountAnnotations: {}
+resources: 
+  requests:
+    cpu: 100m
+    memory: 180Mi
+  limits:
+    cpu: 140m
+    memory: 200Mi
+affinity: {}
+#  podAntiAffinity:
+#    requiredDuringSchedulingIgnoredDuringExecution:
+#      - labelSelector:
+#          matchLabels:
+#            app.kubernetes.io/name: '{{ template "traefik.name" . }}'
+#            app.kubernetes.io/instance: '{{ .Release.Name }}-{{ include "traefik.namespace" . }}'
+#        topologyKey: kubernetes.io/hostname
 
-serviceAccount:
-  name: traefik
+# -- nodeSelector is the simplest recommended form of node selection constraint.
+nodeSelector: {}
+# -- Tolerations allow the scheduler to schedule pods with matching taints.
+tolerations: []
+# -- You can use topology spread constraints to control
+# how Pods are spread across your cluster among failure-domains.
+topologySpreadConstraints: []
+# This example topologySpreadConstraints forces the scheduler to put traefik pods
+# on nodes where no other traefik pods are scheduled.
+#  - labelSelector:
+#      matchLabels:
+#        app.kubernetes.io/name: '{{ template "traefik.name" . }}'
+#    maxSkew: 1
+#    topologyKey: kubernetes.io/hostname
+#    whenUnsatisfiable: DoNotSchedule
 
+# -- [Pod Priority and Preemption](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/)
+priorityClassName: ""
+
+# -- [SecurityContext](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#security-context-1)
+# @default -- See _values.yaml_
 securityContext:
+  allowPrivilegeEscalation: false
   capabilities:
-    drop:
-      - ALL
+    drop: [ALL]
   readOnlyRootFilesystem: true
+
+# -- [Pod Security Context](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#security-context)
+# @default -- See _values.yaml_
+podSecurityContext:
   runAsGroup: 65532
   runAsNonRoot: true
   runAsUser: 65532
 
-podSecurityContext:
-  fsGroup: 65532
-
-# ---------------------------------------------------------
-# SCHEDULING
-# ---------------------------------------------------------
-affinity: {}
-nodeSelector: {}
-tolerations: []
-topologySpreadConstraints: []
-priorityClassName: ""
-
+#
 extraObjects: []
+namespaceOverride: ""
+instanceLabelOverride: ""
+versionOverride: ""
+hub:
+  token: ""
+  offline:  # @schema type:[boolean, null]
+  namespaces: []  # @schema required:true
+  apimanagement:
+    enabled: false
+    admission:
+      listenAddr: ""
+      secretName: "hub-agent-cert"
+      selfManagedCertificate: false
+      customWebhookCertificate: {}
+      restartOnCertificateChange: true
+      annotations: {}
+    openApi:
+      validateRequestMethodAndPath: false
+
+  mcpgateway:
+    enabled: false
+    maxRequestBodySize:  # @schema type:[integer, null]; minimum:0
+
+  aigateway:
+    enabled: false
+    maxRequestBodySize:  # @schema type:[integer, null]; minimum:0
+  providers:
+    consulCatalogEnterprise:
+      enabled: false
+      cache: false
+      connectAware: false
+      connectByDefault: false
+      constraints: ""
+      defaultRule: "Host(`{{ normalize .Name }}`)"
+      endpoint:
+        address: ""
+        datacenter: ""
+        endpointWaitTime: 0
+        httpauth:
+          password: ""
+          username: ""
+        scheme: ""
+        tls:
+          ca: ""
+          cert: ""
+          insecureSkipVerify: false
+          key: ""
+        token: ""
+      exposedByDefault: true
+      namespaces: ""
+      partition: ""
+      prefix: "traefik"
+      refreshInterval: 15
+      requireConsistent: false
+      serviceName: "traefik"
+      stale: false
+      strictChecks: "passing, warning"
+      watch: false
+    microcks:
+      enabled: false
+      auth:
+        clientId: ""
+        clientSecret: ""
+        endpoint: ""
+        token: ""
+      endpoint: ""
+      pollInterval: 30
+      pollTimeout: 5
+      tls:
+        ca: ""
+        cert: ""
+        insecureSkipVerify: false
+        key: ""
+  redis:
+    cluster:    # @schema type:[boolean, null]
+    database:   # @schema type:[string, null]
+    endpoints: ""
+    username: ""
+    password: ""
+    sentinel:
+      masterset: ""
+      username: ""
+      password: ""
+    timeout: ""
+    tls:
+      ca: ""
+      cert: ""
+      key: ""
+      insecureSkipVerify: false
+  sendlogs:  # @schema type:[boolean, null]
+
+  tracing:
+    additionalTraceHeaders:
+      enabled: false
+      traceContext:
+        parentId: ""
+        traceId: ""
+        traceParent: ""
+        traceState: ""
+  pluginRegistry:
+    sources: {}
+oci_meta:
+  enabled: false
+  repo: traefik
+  images:
+    proxy:
+      image: traefik
+      tag: latest
+    hub:
+      image: traefik-hub
+      tag: latest
