@@ -480,7 +480,7 @@ ports:
     exposedPort: 80
     targetPort:  # @schema type:[string, integer, null]; minimum:0
     protocol: TCP
-    nodePort:  # @schema type:[integer, null]; minimum:0
+    nodePort: 31080
     redirections:
       entryPoint: {}
     forwardedHeaders:
@@ -513,7 +513,7 @@ ports:
     exposedPort: 443
     targetPort:  # @schema type:[string, integer, null]; minimum:0
     protocol: TCP
-    nodePort:  # @schema type:[integer, null]; minimum:0
+    nodePort: 31443
     appProtocol:  # @schema type:[string, null]
     allowACMEByPass: false
     http3:
