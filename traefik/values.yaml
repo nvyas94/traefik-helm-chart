@@ -121,7 +121,7 @@ api:
   basePath: ""  # @schema type:[string, null]; default: "/"
 ingressRoute:
   dashboard:
-    enabled: false
+    enabled: true
     annotations: {}
     labels: {}
     matchRule: PathPrefix(`/dashboard`) || PathPrefix(`/api`)
