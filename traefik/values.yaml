@@ -101,13 +101,13 @@ gateway:
       hostname: ""
       protocol: HTTP
       namespacePolicy:  # @schema type:[object, null]
-     websecure:
+    websecure:
     #   # -- Port is the network port. Multiple listeners may use the same port, subject to the Listener compatibility rules.
     #   # The port must match a port declared in ports section.
-       port: 8443
-       hostname: ""
-       protocol: HTTP
-    #   namespacePolicy:
+      port: 8443
+      hostname: ""
+      protocol: HTTP
+    #  namespacePolicy:
     #   certificateRefs:
     #   mode:
 
