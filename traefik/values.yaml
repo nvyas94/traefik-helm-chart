@@ -101,12 +101,12 @@ gateway:
       hostname: ""
       protocol: HTTP
       namespacePolicy:  # @schema type:[object, null]
-    # websecure:
+     websecure:
     #   # -- Port is the network port. Multiple listeners may use the same port, subject to the Listener compatibility rules.
     #   # The port must match a port declared in ports section.
-    #   port: 8443
-    #   hostname:
-    #   protocol: HTTPS
+       port: 8443
+       hostname: ""
+       protocol: HTTP
     #   namespacePolicy:
     #   certificateRefs:
     #   mode:
@@ -620,6 +620,7 @@ persistence:
   existingClaim: ""
   accessMode: ReadWriteOnce
   size: 128Mi
+  size: 128Mi
   storageClass: ""
   volumeName: ""
   path: /data
@@ -645,10 +646,11 @@ resources:
     cpu: 140m
     memory: 200Mi
 affinity: {}
-#  podAntiAffinity:
-#    requiredDuringSchedulingIgnoredDuringExecution:
-#      - labelSelector:
-#          matchLabels:
+  # podAntiAffinity:
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #     - labelSelector:
+  #         matchLabels:
+  #            trafiktag: ofk
 #            app.kubernetes.io/name: '{{ template "traefik.name" . }}'
 #            app.kubernetes.io/instance: '{{ .Release.Name }}-{{ include "traefik.namespace" . }}'
 #        topologyKey: kubernetes.io/hostname
