@@ -536,7 +536,7 @@ ports:
       keepAliveMaxRequests:         # @schema type:[integer, null]; minimum:0
       keepAliveMaxTime:             # @schema type:[string, integer, null]
     tls:
-      enabled: true
+      enabled: false
       options: ""
       certResolver: ""
       domains: []
